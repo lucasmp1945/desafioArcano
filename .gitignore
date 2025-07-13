@@ -1,0 +1,13 @@
+# Ignorar archivo de variables de entorno
+.env
+
+# Ignorar carpeta de dependencias
+node_modules/
+
+# Ignorar carpeta de descargas y archivos temporales
+descargas/
+tmp_ocr/
+tmp/
+
+# Otros
+*.log

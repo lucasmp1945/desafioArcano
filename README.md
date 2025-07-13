@@ -25,4 +25,5 @@ MacOS
 
 ```bash
 npm install
+npx playwright install
 npm start

@@ -1,39 +1,41 @@
-# syntax = docker/dockerfile:1
+FROM node:18-bullseye
 
-# Adjust NODE_VERSION as desired
-ARG NODE_VERSION=20.5.0
-FROM node:${NODE_VERSION}-slim AS base
+# 1. Instala dependencias del sistema + Chromium
+RUN apt-get update && \
+    apt-get install -y \
+    chromium \
+    libnss3 \
+    libx11-6 \
+    libxcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxdamage1 \
+    libxext6 \
+    libxfixes3 \
+    libxi6 \
+    libxrandr2 \
+    libxrender1 \
+    libxss1 \
+    libxtst6 \
+    libglib2.0-0 \
+    libgbm1 \
+    libasound2 \
+    && rm -rf /var/lib/apt/lists/*
 
-LABEL fly_launch_runtime="Node.js"
+# 2. Configura entorno para Chromium
+ENV CHROMIUM_PATH=/usr/bin/chromium
+ENV PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
+ENV DISABLE_PLAYWRIGHT_TEST=1
 
-# Node.js app lives here
 WORKDIR /app
 
-# Set production environment
-ENV NODE_ENV="production"
+# 3. Instala dependencias (excluyendo playwright del bundle final)
+COPY package*.json ./
+RUN npm ci --omit=dev
 
-
-# Throw-away build stage to reduce size of final image
-FROM base AS build
-
-# Install packages needed to build node modules
-RUN apt-get update -qq && \
-    apt-get install --no-install-recommends -y build-essential node-gyp pkg-config python-is-python3
-
-# Install node modules
-COPY package-lock.json package.json ./
-RUN npm ci
-
-# Copy application code
+# 4. Copia el código
 COPY . .
 
-
-# Final stage for app image
-FROM base
-
-# Copy built application
-COPY --from=build /app /app
-
-# Start the server by default, this can be overwritten at runtime
 EXPOSE 3000
-CMD [ "npm", "run", "start" ]
+
+CMD ["node", "src/server.js"]

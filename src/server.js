@@ -5,8 +5,37 @@ const axios = require('axios');
 const { romanoAEntero, irAPagina, reintentarDescargaConEspera } = require('./utils/helpers.js');
 const { extraerCodigo, descargarPDFDeManuscrito, desbloquearYDescargarPDF, desbloquearYDescargarEnPagina2 } = require('./utils/pdfUtils.js');
 
-const app = express();
+const app = express();        
+const cors = require('cors');
+
+// Configuración específica para Fly.io
+const CHROMIUM_PATH = process.env.CHROMIUM_PATH || '/usr/bin/chromium';
+const IS_FLY_IO = process.env.FLY_APP_NAME !== undefined;
+
+async function launchBrowser() {
+    return await chromium.launch({
+      headless: true,
+      executablePath: process.env.CHROMIUM_PATH || '/usr/bin/chromium',
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--single-process',
+        '--disable-gpu'
+      ],
+      timeout: 60000
+    });
+  }
+
 const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Servidor escuchando en http://0.0.0.0:${PORT}`);
+});
+
 
 async function extraerManuscritos(page, pagina) {
     await page.waitForSelector('h3');
@@ -97,7 +126,7 @@ app.get('/scrapear', async (req, res) => {
         res.write(msg + '\n');
         console.log(msg);
     };
-
+    browser = await launchBrowser();
     const browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
     const allManuscritos = [];
